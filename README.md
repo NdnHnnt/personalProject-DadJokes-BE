@@ -30,6 +30,7 @@ Before you begin, ensure you have met the following requirements:
    ```
 
 2. Run the application using `npm start`.
+3. The API should be running in `localhost:3000` and can be accessed through Postman.
 
 ## API Endpoints
 
