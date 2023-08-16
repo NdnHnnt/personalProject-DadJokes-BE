@@ -1,0 +1,33 @@
+{
+  "name": "personalproject-dadjokes",
+  "version": "1.0.0",
+  "description": "This repository contains my project focused on an API for dad jokes, born out of moments of boredom – hehe.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NdnHnnt/personalProject-dadJokes.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NdnHnnt/personalProject-dadJokes/issues"
+  },
+  "homepage": "https://github.com/NdnHnnt/personalProject-dadJokes#readme",
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "dotenv": "^16.3.1",
+    "express.js": "^1.0.0",
+    "jsonwebtoken": "^9.0.1",
+    "moment": "^2.29.4",
+    "mysql2": "^3.6.0",
+    "nanoid": "^4.0.2",
+    "nanoid-esm": "^2.1.0-esm.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
