@@ -188,6 +188,7 @@ router.post("/:jokesId/comment", [authenticateToken], async (req, res) => {
   const { email } = req.response;
   try {
     const { jokesId } = req.params;
+    const { comment } = req.body;
     let userId;
     const [rows] = await pool
       .promise()
@@ -287,7 +288,6 @@ router.delete(
     const { email } = req.response;
     try {
       const { jokesId, commentId } = req.params;
-      const { comment } = req.body;
       let userId;
       const [rows] = await pool
         .promise()
@@ -302,7 +302,7 @@ router.delete(
         );
 
       var count = rows2[0].count;
-      if (!count) {
+      if (count=0) {
         return res.status(400).json({
           status: 401,
           msg: "Anda tidak memiliki hak untuk menghapus komentar ini",
