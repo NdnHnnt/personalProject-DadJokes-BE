@@ -46,7 +46,7 @@ router.post("/signup", async (req, res) => {
     if (count > 0) {
       return res.status(400).json({
         status: 401,
-        msg: "E-mail sudah terdaftar dalam sistem, mohon Sign In menggunakan e-mail yang sudah terdaftar.",
+        msg: "E-mail sudah terdaftar dalam sistem",
       });
     }
     const nanoidString = nanoid(8);
@@ -59,7 +59,7 @@ router.post("/signup", async (req, res) => {
       .query(query, [nanoidString, email, username, hashedPassword]);
     return res.status(200).json({
       status: 200,
-      msg: "Akun telah dibuat, Selamat bergabung di komunitas dadJokes",
+      msg: "Akun telah berhasil dibuat",
     });
   } catch (error) {
     console.error("Error executing query:", error);
