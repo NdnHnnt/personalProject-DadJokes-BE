@@ -36,38 +36,47 @@ router.get("/", [authenticateToken], async (req, res) => {
 
 router.post("/signup", async (req, res) => {
   const { email, username, password } = req.body;
-  try {
-    const [rows] = await pool
-      .promise()
-      .query("SELECT COUNT(*) AS count FROM user WHERE user_email = ?", [
-        email,
-      ]);
-    const count = rows[0].count;
-    if (count > 0) {
-      return res.status(400).json({
-        status: 401,
-        msg: "E-mail sudah terdaftar dalam sistem",
+  if (email && username && password){
+    try {
+      const [rows] = await pool
+        .promise()
+        .query("SELECT COUNT(*) AS count FROM user WHERE user_email = ?", [
+          email,
+        ]);
+      const count = rows[0].count;
+      if (count > 0) {
+        return res.status(400).json({
+          status: 401,
+          msg: "E-mail sudah terdaftar dalam sistem",
+        });
+      }
+      const nanoidString = nanoid(8);
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      const query =
+        "INSERT INTO user (user_id, user_email, user_name, user_password) VALUES (?, ?, ?, ?)";
+      await pool
+        .promise()
+        .query(query, [nanoidString, email, username, hashedPassword]);
+      return res.status(200).json({
+        status: 200,
+        msg: "Akun telah berhasil dibuat",
+      });
+    } catch (error) {
+      console.error("Error executing query:", error);
+      return res.status(500).json({
+        status: 500,
+        msg: "Server error",
       });
     }
-    const nanoidString = nanoid(8);
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-    const query =
-      "INSERT INTO user (user_id, user_email, user_name, user_password) VALUES (?, ?, ?, ?)";
-    await pool
-      .promise()
-      .query(query, [nanoidString, email, username, hashedPassword]);
-    return res.status(200).json({
-      status: 200,
-      msg: "Akun telah berhasil dibuat",
-    });
-  } catch (error) {
-    console.error("Error executing query:", error);
+  }
+  else {
     return res.status(500).json({
-      status: 500,
-      msg: "Server error",
+      status: 400,
+      msg: "Mohon Lengkapi Informasi",
     });
   }
+  
 });
 
 router.post("/signin", async (req, res) => {
