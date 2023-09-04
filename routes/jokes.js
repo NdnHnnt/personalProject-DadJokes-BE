@@ -47,30 +47,32 @@ router.post("/", [authenticateToken], async (req, res) => {
     const jokeTime = moment();
 
     let userId;
-    const [rows] = await pool
-      .promise()
-      .query("SELECT * FROM user WHERE user_email = ? ", [email]);
-    userId = rows[0].user_id;
-    await pool
-      .promise()
-      .query(
-        "INSERT INTO jokes (jokes_id, jokes_question, jokes_answer, jokes_user, jokes_timestamp) VALUES (?, ?, ?, ?, ?)",
-        [jokeId, question, answer, userId, currentDate]
-      );
+    if (question && answer) {
+      const [rows] = await pool
+        .promise()
+        .query("SELECT * FROM user WHERE user_email = ? ", [email]);
+      userId = rows[0].user_id;
+      await pool
+        .promise()
+        .query(
+          "INSERT INTO jokes (jokes_id, jokes_question, jokes_answer, jokes_user, jokes_timestamp) VALUES (?, ?, ?, ?, ?)",
+          [jokeId, question, answer, userId, currentDate]
+        );
 
-    const queryResult = await pool
-      .promise()
-      .query(
-        "SELECT jokes_id, jokes_question, jokes_answer FROM jokes WHERE jokes_id = ? LIMIT 1",
-        [jokeId]
-      );
-    const result = queryResult[0][0];
+      const queryResult = await pool
+        .promise()
+        .query(
+          "SELECT jokes_id, jokes_question, jokes_answer FROM jokes WHERE jokes_id = ? LIMIT 1",
+          [jokeId]
+        );
+      const result = queryResult[0][0];
 
-    res.status(200).json({
-      status: 200,
-      msg: "Jokes created",
-      data: result,
-    });
+      res.status(200).json({
+        status: 200,
+        msg: "Jokes created",
+        data: result,
+      });
+    }
   } catch (error) {
     console.error("Error creating community post:", error);
     res.status(500).json({
@@ -247,7 +249,6 @@ router.delete("/:jokesId", [authenticateToken], async (req, res) => {
     const jokeCount = rows2[0].jokeCount;
 
     if (jokeCount >= 1) {
-
       await pool
         .promise()
         .query("DELETE FROM jokes WHERE jokes_id = ?", [jokesId]);
@@ -302,7 +303,7 @@ router.delete(
         );
 
       var count = rows2[0].count;
-      if (count=0) {
+      if ((count = 0)) {
         return res.status(400).json({
           status: 401,
           msg: "Anda tidak memiliki hak untuk menghapus komentar ini",
