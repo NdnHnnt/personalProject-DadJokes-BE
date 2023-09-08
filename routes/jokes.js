@@ -136,6 +136,36 @@ router.get("/:jokesId", [authenticateToken], async (req, res) => {
   }
 });
 
+router.get("/:jokesId/is_liked", [authenticateToken], async (req, res) => {
+  const { email } = req.response;
+  try {
+    const { jokesId } = req.params;
+    let userId;
+    const [rows] = await pool
+      .promise()
+      .query("SELECT * FROM user WHERE user_email = ? ", [email]);
+    userId = rows[0].user_id;
+    const [likesRows] = await pool
+      .promise()
+      .query(
+        `SELECT COUNT(*) AS count FROM likes WHERE likes_user = ? AND likes_joke = ?`,
+        [userId, jokesId]
+      );
+
+    const isLiked = likesRows[0].count;
+    return res.status(200).json({
+      status: 200,
+      data: isLiked,
+    });
+  } catch (error) {
+    console.error("Error fetching community post:", error);
+    res.status(500).json({
+      status: 500,
+      msg: "Server error",
+    });
+  }
+});
+
 router.post("/:jokesId/like", [authenticateToken], async (req, res) => {
   const { email } = req.response;
   try {
