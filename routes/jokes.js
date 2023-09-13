@@ -11,24 +11,37 @@ const router = Router();
 const currentDate = moment().format("YYYY-MM-DD HH:mm:ss");
 
 router.get("/", [authenticateToken], async (req, res) => {
+  const { email } = req.response;
   try {
-    const [rows] = await pool.promise().query(
-      `SELECT jokes.jokes_id,
-        jokes.jokes_question,
-        jokes.jokes_answer,
-        user.user_name AS author,
-        COUNT(comment.comment_id) AS comment_count,
-        COUNT(likes.likes_id) AS like_count
-        FROM jokes
-        LEFT JOIN comment ON jokes.jokes_id = comment.comment_joke
-        LEFT JOIN likes ON jokes.jokes_id = likes.likes_joke
-        LEFT JOIN user ON user.user_id = jokes.jokes_user
-        GROUP BY jokes.jokes_id`
+    let userId;
+    const [userRows] = await pool
+      .promise()
+      .query("SELECT * FROM user WHERE user_email = ? ", [email]);
+    userId = userRows[0].user_id;
+
+    const [jokesRows] = await pool.promise().query(
+      `SELECT
+      jokes.jokes_id,
+      jokes.jokes_question,
+      jokes.jokes_answer,
+      user.user_name AS author,
+      COUNT(DISTINCT comment.comment_id) AS comment_count,
+      COUNT(DISTINCT likes.likes_id) AS like_count,
+      (
+        SELECT COUNT(*) 
+        FROM likes AS innerLikes
+        WHERE innerLikes.likes_user = ? AND innerLikes.likes_joke = jokes.jokes_id
+      ) AS is_liked
+    FROM jokes
+    LEFT JOIN comment ON jokes.jokes_id = comment.comment_joke
+    LEFT JOIN likes ON jokes.jokes_id = likes.likes_joke
+    LEFT JOIN user ON user.user_id = jokes.jokes_user
+    GROUP BY jokes.jokes_id`,
+      [userId]
     );
-    const jokes = rows;
-    res.status(200).json({
+    return res.status(200).json({
       status: 200,
-      data: jokes,
+      data: jokesRows,
     });
   } catch (error) {
     console.error("Error retrieving jokes:", error);
@@ -97,6 +110,11 @@ router.get("/:jokesId", [authenticateToken], async (req, res) => {
               jokes.jokes_question,
               jokes.jokes_answer,
               u.user_name AS author,
+              (
+                SELECT COUNT(*) 
+                FROM likes AS innerLikes
+                WHERE innerLikes.likes_user = ? AND innerLikes.likes_joke = jokes.jokes_id
+              ) AS is_liked,
               COUNT(DISTINCT likes.likes_id) AS like_count,
               COUNT(DISTINCT comment.comment_id) AS comment_count,
               (
@@ -119,43 +137,11 @@ router.get("/:jokesId", [authenticateToken], async (req, res) => {
             LEFT JOIN likes ON jokes.jokes_id = likes.likes_joke
             WHERE jokes.jokes_id = ?
             GROUP BY jokes.jokes_id`,
-      [jokesId]
+      [userId, jokesId]
     );
-
-    const jokesPost = jokesRows;
     return res.status(200).json({
       status: 200,
-      data: jokesPost,
-    });
-  } catch (error) {
-    console.error("Error fetching community post:", error);
-    res.status(500).json({
-      status: 500,
-      msg: "Server error",
-    });
-  }
-});
-
-router.get("/:jokesId/is_liked", [authenticateToken], async (req, res) => {
-  const { email } = req.response;
-  try {
-    const { jokesId } = req.params;
-    let userId;
-    const [rows] = await pool
-      .promise()
-      .query("SELECT * FROM user WHERE user_email = ? ", [email]);
-    userId = rows[0].user_id;
-    const [likesRows] = await pool
-      .promise()
-      .query(
-        `SELECT COUNT(*) AS count FROM likes WHERE likes_user = ? AND likes_joke = ?`,
-        [userId, jokesId]
-      );
-
-    const isLiked = likesRows[0].count;
-    return res.status(200).json({
-      status: 200,
-      data: isLiked,
+      data: jokesRows,
     });
   } catch (error) {
     console.error("Error fetching community post:", error);
@@ -359,3 +345,33 @@ router.delete(
 );
 
 module.exports = router;
+// const [jokesRows] = await pool.promise().query(
+//   `SELECT
+//           jokes.jokes_timestamp,
+//           jokes.jokes_question,
+//           jokes.jokes_answer,
+//           u.user_name AS author,
+//           COUNT(DISTINCT likes.likes_id) AS like_count,
+//           COUNT(DISTINCT comment.comment_id) AS comment_count,
+//           (
+//             SELECT JSON_ARRAYAGG(
+//               JSON_OBJECT(
+//                 'comment_id', c.comment_id,
+//                 'username', u.user_name,
+//                 'timestamp', c.comment_timestamp,
+//                 'comment', c.comment_content
+//               )
+//             )
+//             FROM comment AS c
+//             LEFT JOIN user AS u ON c.comment_user = u.user_id
+//             WHERE c.comment_joke = jokes.jokes_id
+//             ORDER BY c.comment_timestamp
+//           ) AS comments
+//         FROM jokes
+//         LEFT JOIN user AS u ON jokes.jokes_user = u.user_id
+//         LEFT JOIN comment ON jokes.jokes_id = comment.comment_joke
+//         LEFT JOIN likes ON jokes.jokes_id = likes.likes_joke
+//         WHERE jokes.jokes_id = ?
+//         GROUP BY jokes.jokes_id`,
+//   [jokesId]
+// );
