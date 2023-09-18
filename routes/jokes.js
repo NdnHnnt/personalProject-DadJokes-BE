@@ -111,6 +111,11 @@ router.get("/:jokesId", [authenticateToken], async (req, res) => {
               jokes.jokes_answer,
               u.user_name AS author,
               (
+                SELECT COUNT(*)
+                FROM jokes
+                WHERE jokes.jokes_user = ? AND jokes.jokes_id = ?
+              ) AS is_author,
+              (
                 SELECT COUNT(*) 
                 FROM likes AS innerLikes
                 WHERE innerLikes.likes_user = ? AND innerLikes.likes_joke = jokes.jokes_id
@@ -123,7 +128,8 @@ router.get("/:jokesId", [authenticateToken], async (req, res) => {
                     'comment_id', c.comment_id,
                     'username', u.user_name,
                     'timestamp', c.comment_timestamp,                    
-                    'comment', c.comment_content 
+                    'comment', c.comment_content,
+                    'is_author', IF(c.comment_user = ?, 1, 0)
                   )
                 )
                 FROM comment AS c
@@ -137,7 +143,7 @@ router.get("/:jokesId", [authenticateToken], async (req, res) => {
             LEFT JOIN likes ON jokes.jokes_id = likes.likes_joke
             WHERE jokes.jokes_id = ?
             GROUP BY jokes.jokes_id`,
-      [userId, jokesId]
+      [userId, jokesId, userId, userId, jokesId]
     );
     return res.status(200).json({
       status: 200,
