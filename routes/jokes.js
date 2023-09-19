@@ -21,6 +21,7 @@ router.get("/", [authenticateToken], async (req, res) => {
 
     const [jokesRows] = await pool.promise().query(
       `SELECT
+      jokes.jokes_timestamp,
       jokes.jokes_id,
       jokes.jokes_question,
       jokes.jokes_answer,
@@ -36,7 +37,9 @@ router.get("/", [authenticateToken], async (req, res) => {
     LEFT JOIN comment ON jokes.jokes_id = comment.comment_joke
     LEFT JOIN likes ON jokes.jokes_id = likes.likes_joke
     LEFT JOIN user ON user.user_id = jokes.jokes_user
-    GROUP BY jokes.jokes_id`,
+    GROUP BY jokes.jokes_id
+    ORDER BY jokes.jokes_timestamp DESC`
+    ,
       [userId]
     );
     return res.status(200).json({
@@ -135,7 +138,7 @@ router.get("/:jokesId", [authenticateToken], async (req, res) => {
                 FROM comment AS c
                 LEFT JOIN user AS u ON c.comment_user = u.user_id
                 WHERE c.comment_joke = jokes.jokes_id
-                ORDER BY c.comment_timestamp
+                ORDER BY c.comment_timestamp ASC
               ) AS comments
             FROM jokes
             LEFT JOIN user AS u ON jokes.jokes_user = u.user_id
@@ -273,7 +276,7 @@ router.delete("/:jokesId", [authenticateToken], async (req, res) => {
     if (jokeCount >= 1) {
       await pool
         .promise()
-        .query("DELETE FROM jokes WHERE jokes_id = ?", [jokesId]);
+        .query("DELETE FROM likes WHERE likes_joke = ?", [jokesId]);
 
       await pool
         .promise()
@@ -281,8 +284,8 @@ router.delete("/:jokesId", [authenticateToken], async (req, res) => {
 
       await pool
         .promise()
-        .query("DELETE FROM likes WHERE likes_joke = ?", [jokesId]);
-
+        .query("DELETE FROM jokes WHERE jokes_id = ?", [jokesId]);
+      
       res.status(200).json({
         status: 200,
         msg: "Joke deleted",
